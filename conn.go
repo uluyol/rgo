@@ -114,13 +114,13 @@ func (c *Conn) directR(cmd string) error {
 	return err
 }
 
-const cmdStr = `..rgo.ret = c()
+const cmdStr = `..rgo.ret = c("", "")
 tryCatch({
 	%s
 }, warning = function(w) {
-	..rgo.ret["Warning"] <<- conditionMessage(w)
+	..rgo.ret[1] <<- conditionMessage(w)
 }, error = function(e) {
-	..rgo.ret["Error"] <<- conditionMessage(e)
+	..rgo.ret[2] <<- conditionMessage(e)
 })
 print(..rgo.ret)
 httpPUT("http://localhost:%d/%s", toJSON(..rgo.ret))
@@ -164,11 +164,16 @@ func (c *Conn) R(cmd string) error {
 	rd := <-rch
 	defer close(rd.done)
 	dec := json.NewDecoder(rd.r)
-	var result res
-	if err := dec.Decode(&result); err != nil {
-		c.err = fmt.Errorf("error while decoding: %v", err)
+	var resultPair []string
+	if err := dec.Decode(&resultPair); err != nil {
+		c.err = fmt.Errorf("error while decoding result: %v", err)
 		return c.err
 	}
+	if len(resultPair) != 2 {
+		c.err = fmt.Errorf("invalid result pair: %v has length %d", resultPair, len(resultPair))
+		return c.err
+	}
+	result := res{resultPair[0], resultPair[1]}
 	c.err = result.toError()
 	if IsWarning(c.err) {
 		err := c.err
