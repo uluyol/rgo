@@ -48,3 +48,19 @@ func TestConn(t *testing.T) {
 
 	c.Close()
 }
+
+func TestConnStrict(t *testing.T) {
+	c := newTestConn(t)
+	defer c.Close()
+
+	if err := c.Strict(); err != nil {
+		t.Errorf("unexpected error setting strict mode: %v", err)
+	}
+	err := c.R("warning('hi')")
+	if err == nil {
+		t.Errorf("expected error")
+	}
+	if IsWarning(err) {
+		t.Errorf("got warning instead of error")
+	}
+}
