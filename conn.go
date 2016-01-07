@@ -232,6 +232,35 @@ func (c *Conn) Send(data interface{}, name string) error {
 	return c.Rf("%s = fromJSON(getURL(\"http://localhost:%d/%s\"))", name, c.server.port, key)
 }
 
+// SendDF sends a DataFrame and properly unpacks it as an
+// R data frame.
+func (c *Conn) SendDF(df *DataFrame, name string) error {
+	if err := c.Send(df.cols, "..rgo.df.cols"); err != nil {
+		return err
+	}
+	if err := c.Send(df.colNames, "..rgo.df.colNames"); err != nil {
+		return err
+	}
+	if !df.namelessRows {
+		if err := c.Send(df.rowNames, "..rgo.df.rowNames"); err != nil {
+			return err
+		}
+	}
+	var err error
+	if df.namelessRows {
+		err = c.R("..rgo.df.result <- data.frame(t(..rgo.df.cols)")
+	} else {
+		err = c.R("..rgo.df.result <- data.frame(t(..rgo.df.cols), row.names=..rgo.df.rowNames)")
+	}
+	if err != nil {
+		return err
+	}
+	if err := c.R("colnames(..rgo.df.result) <- ..rgo.df.colNames"); err != nil {
+		return err
+	}
+	return c.Rf("%s <- ..rgo.df.result", name)
+}
+
 // Get gets data from R. data will be deserialized from json.
 func (c *Conn) Get(data interface{}, name string) error {
 	if c.err != nil {
