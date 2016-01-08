@@ -13,14 +13,25 @@ import (
 type SimpleData interface{}
 
 func ensureSimpleData(x SimpleData) {
+	if isNumeric(x) {
+		return
+	}
 	switch x.(type) {
 	case string, bool:
+	default:
+		panic(fmt.Sprintf("%s is not a valid SimpleData value", x))
+	}
+}
+
+func isNumeric(x SimpleData) bool {
+	switch x.(type) {
 	case int, int8, int16, int32, int64: // include rune and byte
 	case uint, uint8, uint16, uint32, uint64, uintptr:
 	case float32, float64:
 	default:
-		panic(fmt.Sprintf("%s is not a valid SimpleData value", x))
+		return false
 	}
+	return true
 }
 
 // DataFrames are used to hold tabular data. This type

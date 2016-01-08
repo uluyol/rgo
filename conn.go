@@ -7,6 +7,8 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"strconv"
+	"strings"
 )
 
 // Conn is used to start and communicate with an R process. Conn
@@ -235,9 +237,23 @@ func (c *Conn) Send(data interface{}, name string) error {
 // SendDF sends a DataFrame and properly unpacks it as an
 // R data frame.
 func (c *Conn) SendDF(df *DataFrame, name string) error {
-	if err := c.Send(df.cols, "..rgo.df.cols"); err != nil {
-		return err
+	colVars := make([]string, len(df.cols))
+	for i, col := range df.cols {
+		colVars[i] = "..rgo.df.cols." + strconv.Itoa(i)
+		if err := c.Send(col, colVars[i]); err != nil {
+			return err
+		}
+		// jsonlite may interpret integers as integers. This is not
+		// desirable because R often treats integers more like enums
+		// than integers. Force all numeric types to become doubles.
+		if len(col) > 0 && isNumeric(col[0]) {
+			err := c.Rf("%s <- as.double(%s)", colVars[i], colVars[i])
+			if err != nil {
+				return err
+			}
+		}
 	}
+	allColVars := strings.Join(colVars, ", ")
 	if err := c.Send(df.colNames, "..rgo.df.colNames"); err != nil {
 		return err
 	}
@@ -248,9 +264,9 @@ func (c *Conn) SendDF(df *DataFrame, name string) error {
 	}
 	var err error
 	if df.namelessRows {
-		err = c.R("..rgo.df.result <- data.frame(t(..rgo.df.cols)")
+		err = c.Rf("..rgo.df.result <- data.frame(%s)", allColVars)
 	} else {
-		err = c.R("..rgo.df.result <- data.frame(t(..rgo.df.cols), row.names=..rgo.df.rowNames)")
+		err = c.Rf("..rgo.df.result <- data.frame(%s, row.names=..rgo.df.rowNames)", allColVars)
 	}
 	if err != nil {
 		return err
