@@ -246,7 +246,7 @@ func (c *Conn) SendDF(df *DataFrame, name string) error {
 		// jsonlite may interpret integers as integers. This is not
 		// desirable because R often treats integers more like enums
 		// than integers. Force all numeric types to become doubles.
-		if len(col) > 0 && isNumeric(col[0]) {
+		if col.len() > 0 && isNumeric((*col.v)[0]) {
 			err := c.Rf("%s <- as.double(%s)", colVars[i], colVars[i])
 			if err != nil {
 				return err
