@@ -18,6 +18,8 @@ import (
 // operations on Conn successively and retrieve any errors
 // using Error(). Do not that although R warnings will be
 // returned in method calls, they will not be captured in Error().
+//
+// Objects in R will not be freed until the Conn is closed.
 type Conn struct {
 	cmd     *exec.Cmd
 	inPipe  io.WriteCloser
