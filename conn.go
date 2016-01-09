@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"runtime"
 	"strconv"
 	"strings"
 )
@@ -25,6 +26,7 @@ type Conn struct {
 
 	err    error
 	strict bool
+	closed bool
 }
 
 func (c *Conn) start() error {
@@ -92,6 +94,7 @@ func Connection(opts ...ConnOption) (*Conn, error) {
 	if err != nil {
 		goto ErrCleanup
 	}
+	runtime.SetFinalizer(&c, func(c *Conn) { c.Close() })
 	return &c, nil
 
 ErrCleanup:
@@ -100,6 +103,9 @@ ErrCleanup:
 }
 
 func (c *Conn) Close() error {
+	if c.closed {
+		return nil
+	}
 	c.directR("q()")
 	c.inPipe.Close()
 	err1 := c.cmd.Wait()
