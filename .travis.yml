@@ -1,0 +1,14 @@
+language: go
+
+go:
+  - 1.5.2
+  - 1.4.3
+
+before_install:
+  - sudo apt-get update -qq
+  - sudo apt-get install -y r-base r-base-dev
+  - R -e "install.packages('jsonlite', repo='http://cran.cnr.Berkeley.edu/')"
+  - R -e "install.packages('RCurl', repo='http://cran.cnr.Berkeley.edu/')"
+
+script:
+  - go test ./...
