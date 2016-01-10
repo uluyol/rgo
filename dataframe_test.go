@@ -1,6 +1,57 @@
 package rgo
 
-import "testing"
+import (
+	"encoding/json"
+	"errors"
+	"fmt"
+	"reflect"
+	"testing"
+)
+
+func dfEqual(a, b *DataFrame) error {
+	if len(a.cols) != len(b.cols) {
+		return errors.New("don't have the same number of cols")
+	}
+	if len(a.colNames) != len(b.colNames) {
+		return errors.New("don't have the same number of col names")
+	}
+	if a.namelessRows != b.namelessRows {
+		return errors.New("one has named rows and the other doesn't")
+	}
+	if len(a.rowNames) != len(b.rowNames) {
+		return errors.New("don't have the same number of row names")
+	}
+	for i := range a.colNames {
+		if a.colNames[i] != b.colNames[i] {
+			return errors.New("don't have the same col names")
+		}
+	}
+	for i := range a.cols {
+		if a.cols[i].len() != b.cols[i].len() {
+			return fmt.Errorf("different number of rows in col %d", i)
+		}
+		//if !reflect.DeepEqual(a.cols[i], b.cols[i]) {
+		//	return fmt.Errorf("col %d entries do not match", i)
+		//}
+		for j := 0; j < a.cols[i].len(); j++ {
+			t1 := reflect.ValueOf(a.cols[i].get(j)).Type()
+			t2 := reflect.ValueOf(b.cols[i].get(j)).Type()
+			if t1 != t2 {
+				return fmt.Errorf("col %d row %d types differ, %s and %s", i, j, t1, t2)
+			}
+			if !reflect.DeepEqual(a.cols[i].get(j), b.cols[i].get(j)) {
+				return fmt.Errorf("col %d row %d entries do not match", i, j)
+			}
+		}
+	}
+	for i := range a.rowNames {
+		if a.rowNames[i] != b.rowNames[i] {
+			return fmt.Errorf("row names for row %d do not match, got %q and %q",
+				i, a.rowNames[i], b.rowNames[i])
+		}
+	}
+	return nil
+}
 
 func TestDataFrameGet(t *testing.T) {
 	testCases := []struct {
@@ -73,6 +124,53 @@ func TestDataFrameGet(t *testing.T) {
 		}
 		if !c.GetFunc(&df) {
 			t.Errorf("case %d: get returned incorrect values", caseN)
+		}
+	}
+}
+
+func TestDataFrameJSON(t *testing.T) {
+	testCases := []struct {
+		ColNames    []string
+		Rows        [][]SimpleData
+		HasRowNames bool
+	}{
+		{
+			ColNames: []string{"anjsadkjn", "2341234123$", "	2341"},
+			Rows:        [][]SimpleData{{123, 123, 123.0}, {90, 23, 11.1}},
+			HasRowNames: false,
+		},
+		{
+			ColNames:    []string{"123123", "asdfadsf123123", "___"},
+			Rows:        [][]SimpleData{{"asdf", "asdf", 123, false}, {"00000", "wert", 12111, true}, {"-", "+", -1, true}},
+			HasRowNames: true,
+		},
+	}
+	for caseN, c := range testCases {
+		var df DataFrame
+		df.SetCols(c.ColNames...)
+		if c.HasRowNames {
+			for _, r := range c.Rows {
+				df.AppendRow(r[0].(string), r[1:]...)
+			}
+		} else {
+			for _, r := range c.Rows {
+				df.AppendURow(r...)
+			}
+		}
+		if err := df.ValidateColumns(); err != nil {
+			t.Errorf("case %d: failed to validate data frame: %v", caseN, err)
+		}
+		b, err := json.Marshal(&df)
+		if err != nil {
+			t.Errorf("case %d: error while marshalling: %v", caseN, err)
+		}
+		var df2 DataFrame
+		if err := json.Unmarshal(b, &df2); err != nil {
+			t.Errorf("case %d: error while unmarshaling: %v", caseN, err)
+		}
+		if err := dfEqual(&df, &df2); err != nil {
+			t.Errorf("case %d: data frames do not equal: %v", caseN, err)
+			t.Logf("case %d: %+v %+v", caseN, df.cols, df2.cols)
 		}
 	}
 }

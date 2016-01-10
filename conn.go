@@ -248,7 +248,7 @@ func (c *Conn) SendDF(df *DataFrame, name string) error {
 	colVars := make([]string, len(df.cols))
 	for i, col := range df.cols {
 		colVars[i] = "..rgo.df.cols." + strconv.Itoa(i)
-		if err := c.Send(col, colVars[i]); err != nil {
+		if err := c.Send(*col.v, colVars[i]); err != nil {
 			return err
 		}
 		// jsonlite may interpret integers as integers. This is not

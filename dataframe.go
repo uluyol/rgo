@@ -7,21 +7,12 @@ import (
 	"reflect"
 )
 
+//go:generate python3 gen_simple_data.py simple_data_util.generated.go string bool int int8 int16 int32 int64 uint uint8 uint16 uint32 uint64 uintptr float32 float64
+
 // SimpleData is the the data type used for DataFrames.
 // A string, int, float, or bool (of any size) is a
 // valid value for a SimpleData variable.
 type SimpleData interface{}
-
-func ensureSimpleData(x SimpleData) {
-	if isNumeric(x) {
-		return
-	}
-	switch x.(type) {
-	case string, bool:
-	default:
-		panic(fmt.Sprintf("%s is not a valid SimpleData value", x))
-	}
-}
 
 func isNumeric(x SimpleData) bool {
 	switch x.(type) {
@@ -128,15 +119,52 @@ func (c dfColumn) append(v SimpleData) dfColumn {
 	return dfColumn{&sl}
 }
 
+func (c dfColumn) String() string {
+	return fmt.Sprint(*c.v)
+}
+
+func (c dfColumn) dtype() string {
+	if len(*c.v) == 0 {
+		return "empty"
+	}
+	return reflect.TypeOf((*c.v)[0]).Kind().String()
+}
+
 func (c dfColumn) MarshalJSON() ([]byte, error) {
-	return json.Marshal(*c.v)
+	s := struct {
+		D string       `json:"dtype"`
+		V []SimpleData `json:"val"`
+	}{
+		c.dtype(),
+		*c.v,
+	}
+	return json.Marshal(s)
 }
 
 func (c *dfColumn) UnmarshalJSON(data []byte) error {
-	var v []SimpleData
-	err := json.Unmarshal(data, &v)
-	c.v = &v
-	return err
+	var dtype struct {
+		D string `json:"dtype"`
+	}
+	if err := json.Unmarshal(data, &dtype); err != nil {
+		return err
+	}
+	v, err := slicePtrOf(dtype.D)
+	if err != nil {
+		return err
+	}
+	wrapper := struct {
+		V interface{} `json:"val"`
+	}{v}
+	if err := json.Unmarshal(data, &wrapper); err != nil {
+		return err
+	}
+	vv := reflect.ValueOf(v)
+	sdv := make([]SimpleData, vv.Elem().Len())
+	for i := 0; i < vv.Elem().Len(); i++ {
+		sdv[i] = vv.Elem().Index(i).Interface()
+	}
+	c.v = &sdv
+	return nil
 }
 
 func newDFColumn() dfColumn {
