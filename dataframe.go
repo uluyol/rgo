@@ -45,8 +45,6 @@ type Row struct {
 }
 
 // Get will return the value of the given column.
-//
-// This operation is currently O(cols).
 func (r Row) Get(colName string, x SimpleData) {
 	for i, name := range r.colNames {
 		if name == colName {
@@ -58,8 +56,6 @@ func (r Row) Get(colName string, x SimpleData) {
 }
 
 // GetIndex will return the value of the given column.
-//
-// This operation is O(1).
 func (r Row) GetIndex(i int, x SimpleData) {
 	v := reflect.ValueOf(x)
 	if v.Kind() != reflect.Ptr && v.Kind() != reflect.Interface {
@@ -79,14 +75,19 @@ func (r Row) GetIndex(i int, x SimpleData) {
 //
 // This type is still experimental.
 type Column struct {
-	v        *[]SimpleData
-	rowNames *[]string
+	v            *[]SimpleData
+	rowNames     *[]string
+	rowNameIndex map[string]int
 }
 
 // Get will return the value of the given row.
-//
-// This operation is currently O(rows).
 func (c Column) Get(rowName string, x SimpleData) {
+	if c.rowNameIndex != nil {
+		if i, ok := c.rowNameIndex[rowName]; ok {
+			c.GetIndex(i, x)
+			return
+		}
+	}
 	for i, name := range *c.rowNames {
 		if name == rowName {
 			c.GetIndex(i, x)
@@ -97,8 +98,6 @@ func (c Column) Get(rowName string, x SimpleData) {
 }
 
 // GetIndex will return the value of the given row.
-//
-// This operation is O(1).
 func (c Column) GetIndex(i int, x SimpleData) {
 	v := reflect.ValueOf(x)
 	if v.Kind() != reflect.Ptr && v.Kind() != reflect.Interface {
@@ -161,6 +160,7 @@ type DataFrame struct {
 	cols         []dfColumn
 	colNames     []string
 	rowNames     []string
+	rowNameIndex map[string]int
 	namelessRows bool
 }
 
@@ -256,7 +256,11 @@ func (df *DataFrame) Col(colName string) Column {
 //
 // ColIndex will panic if the index is out of bounds.
 func (df *DataFrame) ColIndex(i int) Column {
-	return Column{v: df.cols[i].v, rowNames: &df.rowNames}
+	return Column{
+		v:            df.cols[i].v,
+		rowNames:     &df.rowNames,
+		rowNameIndex: df.rowNameIndex,
+	}
 }
 
 // Row gets the row of the provided name. This operation
@@ -264,6 +268,11 @@ func (df *DataFrame) ColIndex(i int) Column {
 //
 // Row will panic if the rowName does not exist.
 func (df *DataFrame) Row(rowName string) Row {
+	if df.rowNameIndex != nil {
+		if i, ok := df.rowNameIndex[rowName]; ok {
+			return df.RowIndex(i)
+		}
+	}
 	for i, name := range df.rowNames {
 		if name == rowName {
 			return df.RowIndex(i)
@@ -282,7 +291,10 @@ func (df *DataFrame) RowIndex(i int) Row {
 	for j := range df.cols {
 		vals[j] = df.cols[j].get(i)
 	}
-	return Row{v: vals, colNames: df.colNames}
+	return Row{
+		v:        vals,
+		colNames: df.colNames,
+	}
 }
 
 // SetCols sets the columns of the DataFrame to have
@@ -301,6 +313,19 @@ func (df *DataFrame) SetCols(colNames ...string) {
 	}
 }
 
+// FastRowLookups increases row name book-keeping to
+// increase the performance of row name lookups.
+//
+// For maximum benefit, enable before adding any rows.
+func (df *DataFrame) FastRowLookups(enable bool) {
+	if !enable {
+		df.rowNameIndex = nil
+	}
+	if df.rowNameIndex == nil {
+		df.rowNameIndex = make(map[string]int)
+	}
+}
+
 // AppendRow adds a new row of data to the DataFrame with the
 // given name. If you do not want named rows, use AppendURow
 // instead.
@@ -312,6 +337,9 @@ func (df *DataFrame) AppendRow(name string, vals ...SimpleData) {
 		panic("incorrect number of values being appended")
 	}
 	df.rowNames = append(df.rowNames, name)
+	if df.rowNameIndex != nil {
+		df.rowNameIndex[name] = len(df.rowNames)
+	}
 	for i := range df.cols {
 		df.cols[i] = df.cols[i].append(vals[i])
 	}
