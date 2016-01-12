@@ -1,4 +1,4 @@
-package rgo
+package dataframe
 
 import (
 	"encoding/json"

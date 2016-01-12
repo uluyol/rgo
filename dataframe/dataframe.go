@@ -1,4 +1,4 @@
-package rgo
+package dataframe
 
 import (
 	"encoding/json"
@@ -14,7 +14,10 @@ import (
 // valid value for a SimpleData variable.
 type SimpleData interface{}
 
-func isNumeric(x SimpleData) bool {
+// IsNumeric checks whether x is a numeric type. Currently these
+// consist only of integers, floats, and bools. Complex numbers and
+// big numbers are not considered numeric.
+func IsNumeric(x SimpleData) bool {
 	switch x.(type) {
 	case int, int8, int16, int32, int64: // include rune and byte
 	case uint, uint8, uint16, uint32, uint64, uintptr:

@@ -4,7 +4,7 @@ outFile = sys.argv[1]
 types = sys.argv[2:]
 
 with open(outFile, "w") as w:
-	w.write("package rgo\n\n")
+	w.write("package dataframe\n\n")
 	w.write('import "fmt"\n\n')
 	w.write("func ensureSimpleData(x SimpleData) {\n")
 	w.write("\tswitch x.(type) {\n")

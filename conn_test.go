@@ -1,6 +1,10 @@
 package rgo
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/uluyol/rgo/dataframe"
+)
 
 func newTestConn(t *testing.T) *Conn {
 	var c *Conn
@@ -74,19 +78,19 @@ func TestConnStrict(t *testing.T) {
 func TestSendDFTypes(t *testing.T) {
 	testCases := []struct {
 		ColNames    []string
-		Rows        [][]SimpleData
+		Rows        [][]dataframe.SimpleData
 		Types       []string
 		HasRowNames bool
 	}{
 		{
 			ColNames:    []string{"a", "B"},
-			Rows:        [][]SimpleData{{1.0, "x"}, {65.0, "asdfasdfasdf"}, {1.0, "aa"}},
+			Rows:        [][]dataframe.SimpleData{{1.0, "x"}, {65.0, "asdfasdfasdf"}, {1.0, "aa"}},
 			Types:       []string{"double", "integer"},
 			HasRowNames: false,
 		},
 		{
 			ColNames:    []string{"234234", "123123f"},
-			Rows:        [][]SimpleData{{"asdf", 2.5, 4}, {"222", float64(2), 1}},
+			Rows:        [][]dataframe.SimpleData{{"asdf", 2.5, 4}, {"222", float64(2), 1}},
 			Types:       []string{"double", "double"},
 			HasRowNames: true,
 		},
@@ -95,7 +99,7 @@ func TestSendDFTypes(t *testing.T) {
 	defer rc.Close()
 	for caseN, c := range testCases {
 		t.Logf("case %d: building data frame", caseN)
-		var df DataFrame
+		var df dataframe.DataFrame
 		df.SetCols(c.ColNames...)
 		if c.HasRowNames {
 			for _, r := range c.Rows {

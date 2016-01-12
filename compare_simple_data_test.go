@@ -3,9 +3,11 @@ package rgo
 import (
 	"reflect"
 	"unsafe"
+
+	"github.com/uluyol/rgo/dataframe"
 )
 
-func eqSimpleData(a, b SimpleData) bool {
+func eqSimpleData(a, b dataframe.SimpleData) bool {
 	av := reflect.ValueOf(a)
 	bv := reflect.ValueOf(b)
 	aSize := int(av.Type().Size())

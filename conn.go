@@ -10,6 +10,8 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+
+	"github.com/uluyol/rgo/dataframe"
 )
 
 // Conn is used to start and communicate with an R process. Conn
@@ -244,7 +246,7 @@ func (c *Conn) Send(data interface{}, name string) error {
 
 // SendDF sends a DataFrame and properly unpacks it as an
 // R data frame.
-func (c *Conn) SendDF(df *DataFrame, name string) error {
+func (c *Conn) SendDF(df *dataframe.DataFrame, name string) error {
 	colNames := df.ColNames()
 	colVars := make([]string, len(colNames))
 	for i := range colNames {
@@ -256,7 +258,7 @@ func (c *Conn) SendDF(df *DataFrame, name string) error {
 		// jsonlite may interpret integers as integers. This is not
 		// desirable because R often treats integers more like enums
 		// than integers. Force all numeric types to become doubles.
-		if col.Len() > 0 && isNumeric(col.GetIndexSD(0)) {
+		if col.Len() > 0 && dataframe.IsNumeric(col.GetIndexSD(0)) {
 			err := c.Rf("%s <- as.double(%s)", colVars[i], colVars[i])
 			if err != nil {
 				return err
