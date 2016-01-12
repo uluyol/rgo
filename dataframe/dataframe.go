@@ -238,9 +238,8 @@ type DataFrame struct {
 	namelessRows bool
 }
 
-// NewDataFrame creates a new DataFrame with the provided
-// column names.
-func NewDataFrame(colNames ...string) *DataFrame {
+// New creates a new DataFrame with the provided column names.
+func New(colNames ...string) *DataFrame {
 	var df DataFrame
 	df.SetCols(colNames...)
 	return &df
