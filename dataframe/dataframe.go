@@ -7,26 +7,12 @@ import (
 	"reflect"
 )
 
-//go:generate python3 gen_simple_data.py simple_data_util.generated.go string bool int int8 int16 int32 int64 uint uint8 uint16 uint32 uint64 uintptr float32 float64
+//go:generate python3 gen_simple_data.py simple_data_util.generated.go other=string,bool numeric=int,int8,int16,int32,int64,uint,uint8,uint16,uint32,uint64,uintptr,float32,float64
 
 // SimpleData is the the data type used for DataFrames.
 // A string, int, float, or bool (of any size) is a
 // valid value for a SimpleData variable.
 type SimpleData interface{}
-
-// IsNumeric checks whether x is a numeric type. Currently these
-// consist only of integers, floats, and bools. Complex numbers and
-// big numbers are not considered numeric.
-func IsNumeric(x SimpleData) bool {
-	switch x.(type) {
-	case int, int8, int16, int32, int64: // include rune and byte
-	case uint, uint8, uint16, uint32, uint64, uintptr:
-	case float32, float64:
-	default:
-		return false
-	}
-	return true
-}
 
 // Row is an immutable copy of a row of DataFrame.
 // As it is a copy, it will not reflect changes

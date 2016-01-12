@@ -2,6 +2,30 @@ package dataframe
 
 import "fmt"
 
+// IsNumeric checks whether x is a numeric type. Currently these
+// consist only of integers and floats. Complex numbers and big
+// numbers are not considered numeric.
+func IsNumeric(x SimpleData) bool {
+	switch x.(type) {
+	case int: // numeric
+	case int8: // numeric
+	case int16: // numeric
+	case int32: // numeric
+	case int64: // numeric
+	case uint: // numeric
+	case uint8: // numeric
+	case uint16: // numeric
+	case uint32: // numeric
+	case uint64: // numeric
+	case uintptr: // numeric
+	case float32: // numeric
+	case float64: // numeric
+	default:
+		return false
+	}
+	return true
+}
+
 func ensureSimpleData(x SimpleData) {
 	switch x.(type) {
 	case string: // no error
