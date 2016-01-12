@@ -245,16 +245,18 @@ func (c *Conn) Send(data interface{}, name string) error {
 // SendDF sends a DataFrame and properly unpacks it as an
 // R data frame.
 func (c *Conn) SendDF(df *DataFrame, name string) error {
-	colVars := make([]string, len(df.cols))
-	for i, col := range df.cols {
+	colNames := df.ColNames()
+	colVars := make([]string, len(colNames))
+	for i := range colNames {
+		col := df.ColIndex(i)
 		colVars[i] = "..rgo.df.cols." + strconv.Itoa(i)
-		if err := c.Send(*col.v, colVars[i]); err != nil {
+		if err := c.Send(col, colVars[i]); err != nil {
 			return err
 		}
 		// jsonlite may interpret integers as integers. This is not
 		// desirable because R often treats integers more like enums
 		// than integers. Force all numeric types to become doubles.
-		if col.len() > 0 && isNumeric((*col.v)[0]) {
+		if col.Len() > 0 && isNumeric(col.GetIndexSD(0)) {
 			err := c.Rf("%s <- as.double(%s)", colVars[i], colVars[i])
 			if err != nil {
 				return err
@@ -262,19 +264,17 @@ func (c *Conn) SendDF(df *DataFrame, name string) error {
 		}
 	}
 	allColVars := strings.Join(colVars, ", ")
-	if err := c.Send(df.colNames, "..rgo.df.colNames"); err != nil {
+	if err := c.Send(colNames, "..rgo.df.colNames"); err != nil {
 		return err
 	}
-	if !df.namelessRows {
-		if err := c.Send(df.rowNames, "..rgo.df.rowNames"); err != nil {
+	var err error
+	if rowNames, ok := df.RowNames(); ok {
+		if err := c.Send(rowNames, "..rgo.df.rowNames"); err != nil {
 			return err
 		}
-	}
-	var err error
-	if df.namelessRows {
-		err = c.Rf("..rgo.df.result <- data.frame(%s)", allColVars)
-	} else {
 		err = c.Rf("..rgo.df.result <- data.frame(%s, row.names=..rgo.df.rowNames)", allColVars)
+	} else {
+		err = c.Rf("..rgo.df.result <- data.frame(%s)", allColVars)
 	}
 	if err != nil {
 		return err

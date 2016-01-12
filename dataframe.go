@@ -60,6 +60,23 @@ func (r Row) GetIndex(i int, x SimpleData) {
 	e.Set(v2)
 }
 
+// GetSD will return the value of the given column as a
+// SimpleData. Users will typically use Get instead of this.
+func (r Row) GetSD(colName string) SimpleData {
+	for i, name := range r.colNames {
+		if name == colName {
+			return r.GetIndexSD(i)
+		}
+	}
+	panic("unable to find column")
+}
+
+// GetIndexSD will return the value of the given column as a
+// SimpleData. Users will typically use GetIndex instead of this.
+func (r Row) GetIndexSD(i int) SimpleData {
+	return r.v[i]
+}
+
 // Column is an immutable view of a column of a
 // DataFrame. It remains up-to-date even as the
 // values in the DataFrame are changed.
@@ -102,8 +119,34 @@ func (c Column) GetIndex(i int, x SimpleData) {
 	e.Set(v2)
 }
 
+// GetSD will return the value of the given row as a SimpleData.
+// Users will typically call Get instead of this.
+func (c Column) GetSD(rowName string) SimpleData {
+	if c.rowNameIndex != nil {
+		if i, ok := c.rowNameIndex[rowName]; ok {
+			return c.GetIndexSD(i)
+		}
+	}
+	for i, name := range *c.rowNames {
+		if name == rowName {
+			return c.GetIndexSD(i)
+		}
+	}
+	panic("unable to find row")
+}
+
+// GetIndexSD will return the value of the given row as a
+// SimpleData. Users will typically call GetIndex instead of this.
+func (c Column) GetIndexSD(i int) SimpleData {
+	return (*c.v)[i]
+}
+
 func (c Column) Len() int {
 	return len(*c.v)
+}
+
+func (c Column) MarshalJSON() ([]byte, error) {
+	return json.Marshal(*c.v)
 }
 
 type dfColumn struct {
@@ -264,6 +307,17 @@ func (df *DataFrame) UnmarshalJSON(data []byte) error {
 	df.rowNames = d.RowNames
 	df.namelessRows = d.NamelessRows
 	return nil
+}
+
+// ColNames returns a slice of the column names.
+func (df *DataFrame) ColNames() []string {
+	return df.colNames
+}
+
+// RowNames returns a slice of the row names and a bool
+// indicating whether the rows are named.
+func (df *DataFrame) RowNames() (rowNames []string, hasNamedRows bool) {
+	return df.rowNames, !df.namelessRows
 }
 
 // Col gets the column of the provided name. This operation
