@@ -246,7 +246,7 @@ func (c *Conn) Send(data interface{}, name string) error {
 
 // SendDF sends a DataFrame and properly unpacks it as an
 // R data frame.
-func (c *Conn) SendDF(df *dataframe.DataFrame, name string) error {
+func (c *Conn) SendDF(df dataframe.DataFrame, name string) error {
 	colNames := df.ColNames()
 	colVars := make([]string, len(colNames))
 	for i := range colNames {

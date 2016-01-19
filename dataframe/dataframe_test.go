@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-func dfEqual(a, b *DataFrame) error {
+func dfEqual(a, b *ColumnDataFrame) error {
 	if len(a.cols) != len(b.cols) {
 		return errors.New("don't have the same number of cols")
 	}
@@ -57,14 +57,14 @@ func TestDataFrameGet(t *testing.T) {
 	testCases := []struct {
 		ColNames    []string
 		Rows        [][]SimpleData
-		GetFunc     func(*DataFrame) bool
+		GetFunc     func(DataFrame) bool
 		HasRowNames bool
 	}{
 		{
 			ColNames:    []string{"a", "B", "cc"},
 			Rows:        [][]SimpleData{{1, "x", false}, {65, "asdfasdfasdf", false}, {1, "aa", true}},
 			HasRowNames: false,
-			GetFunc: func(df *DataFrame) bool {
+			GetFunc: func(df DataFrame) bool {
 				var (
 					a  int
 					b  string
@@ -91,7 +91,7 @@ func TestDataFrameGet(t *testing.T) {
 			ColNames:    []string{"234234", "123123f"},
 			Rows:        [][]SimpleData{{"asdf", 2.5, 4}, {"222", float64(2), 1}},
 			HasRowNames: true,
-			GetFunc: func(df *DataFrame) bool {
+			GetFunc: func(df DataFrame) bool {
 				var first float64
 				var second int
 				df.Col("234234").Get("222", &first)
@@ -108,7 +108,7 @@ func TestDataFrameGet(t *testing.T) {
 		},
 	}
 	for caseN, c := range testCases {
-		var df DataFrame
+		var df ColumnDataFrame
 		df.SetCols(c.ColNames...)
 		if c.HasRowNames {
 			for _, r := range c.Rows {
@@ -146,7 +146,7 @@ func TestDataFrameJSON(t *testing.T) {
 		},
 	}
 	for caseN, c := range testCases {
-		var df DataFrame
+		var df ColumnDataFrame
 		df.SetCols(c.ColNames...)
 		if c.HasRowNames {
 			for _, r := range c.Rows {
@@ -164,7 +164,7 @@ func TestDataFrameJSON(t *testing.T) {
 		if err != nil {
 			t.Errorf("case %d: error while marshalling: %v", caseN, err)
 		}
-		var df2 DataFrame
+		var df2 ColumnDataFrame
 		if err := json.Unmarshal(b, &df2); err != nil {
 			t.Errorf("case %d: error while unmarshaling: %v", caseN, err)
 		}
