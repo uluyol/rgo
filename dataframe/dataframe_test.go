@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-func dfEqual(a, b *ColumnDataFrame) error {
+func dfEqual(a, b *CDataFrame) error {
 	if len(a.cols) != len(b.cols) {
 		return errors.New("don't have the same number of cols")
 	}
@@ -108,7 +108,7 @@ func TestDataFrameGet(t *testing.T) {
 		},
 	}
 	for caseN, c := range testCases {
-		var df ColumnDataFrame
+		var df CDataFrame
 		df.SetCols(c.ColNames...)
 		if c.HasRowNames {
 			for _, r := range c.Rows {
@@ -146,7 +146,7 @@ func TestDataFrameJSON(t *testing.T) {
 		},
 	}
 	for caseN, c := range testCases {
-		var df ColumnDataFrame
+		var df CDataFrame
 		df.SetCols(c.ColNames...)
 		if c.HasRowNames {
 			for _, r := range c.Rows {
@@ -164,7 +164,7 @@ func TestDataFrameJSON(t *testing.T) {
 		if err != nil {
 			t.Errorf("case %d: error while marshalling: %v", caseN, err)
 		}
-		var df2 ColumnDataFrame
+		var df2 CDataFrame
 		if err := json.Unmarshal(b, &df2); err != nil {
 			t.Errorf("case %d: error while unmarshaling: %v", caseN, err)
 		}

@@ -194,20 +194,19 @@ func newDFColumn() dfColumn {
 	return dfColumn{&v}
 }
 
-// ColumnDataFrame is used to hold tabular data. This
-// type can be easily marshaled into an R dataframe.
-// ColumnDataFrames can only store data that meet the
+// CDataFrame is used to hold tabular data. This type
+// can be easily marshaled into an R dataframe.
+// CDataFrames can only store data that meet the
 // requirements set by SimpleData.
 //
-// ColumnDataFrames store data by column not by row. As
+// CDataFrames store data by column not by row. As
 // a result, column-oriented operations can be completed
 // with fewer copies than row-oriented ones.
 //
-// ColumnDataFrames (and associated types) are not
-// thread-safe.
+// CDataFrames (and associated types) are not thread-safe.
 //
 // This type is still experimental.
-type ColumnDataFrame struct {
+type CDataFrame struct {
 	cols         []dfColumn
 	colNames     []string
 	rowNames     []string
@@ -216,14 +215,14 @@ type ColumnDataFrame struct {
 }
 
 // New creates a new DataFrame with the provided column names.
-func New(colNames ...string) *ColumnDataFrame {
-	var df ColumnDataFrame
+func New(colNames ...string) *CDataFrame {
+	var df CDataFrame
 	df.SetCols(colNames...)
 	return &df
 }
 
 // Remember to update this, MarshalJSON, UnmarshalJSON,
-// SendDF, and validate when updating ColumnDataFrame.
+// SendDF, and validate when updating CDataFrame.
 type dataFrameJSON struct {
 	Cols         []dfColumn `json:"cols"`
 	ColNames     []string   `json:"colNames"`
@@ -233,7 +232,7 @@ type dataFrameJSON struct {
 
 // ValidateColumns checks that columns are composed of
 // identical types.
-func (df *ColumnDataFrame) ValidateColumns() (err error) {
+func (df *CDataFrame) ValidateColumns() (err error) {
 	defer func() {
 		if e := recover(); e != nil {
 			if er, ok := e.(error); ok {
@@ -263,7 +262,7 @@ func (df *ColumnDataFrame) ValidateColumns() (err error) {
 	return nil
 }
 
-func (df *ColumnDataFrame) MarshalJSON() ([]byte, error) {
+func (df *CDataFrame) MarshalJSON() ([]byte, error) {
 	// don't use Key: Value syntax here so that this
 	// will break if we forget to update this when
 	// we update the type.
@@ -276,7 +275,7 @@ func (df *ColumnDataFrame) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&d)
 }
 
-func (df *ColumnDataFrame) UnmarshalJSON(data []byte) error {
+func (df *CDataFrame) UnmarshalJSON(data []byte) error {
 	var d dataFrameJSON
 	if err := json.Unmarshal(data, &d); err != nil {
 		return err
@@ -289,13 +288,13 @@ func (df *ColumnDataFrame) UnmarshalJSON(data []byte) error {
 }
 
 // ColNames returns a slice of the column names.
-func (df *ColumnDataFrame) ColNames() []string {
+func (df *CDataFrame) ColNames() []string {
 	return df.colNames
 }
 
 // RowNames returns a slice of the row names and a bool
 // indicating whether the rows are named.
-func (df *ColumnDataFrame) RowNames() (rowNames []string, hasNamedRows bool) {
+func (df *CDataFrame) RowNames() (rowNames []string, hasNamedRows bool) {
 	return df.rowNames, !df.namelessRows
 }
 
@@ -303,7 +302,7 @@ func (df *ColumnDataFrame) RowNames() (rowNames []string, hasNamedRows bool) {
 // does not copy any data.
 //
 // Col will panic if the colName does not exist.
-func (df *ColumnDataFrame) Col(colName string) Column {
+func (df *CDataFrame) Col(colName string) Column {
 	for i, name := range df.colNames {
 		if name == colName {
 			return df.ColIndex(i)
@@ -316,7 +315,7 @@ func (df *ColumnDataFrame) Col(colName string) Column {
 // operation does not copy any data.
 //
 // ColIndex will panic if the index is out of bounds.
-func (df *ColumnDataFrame) ColIndex(i int) Column {
+func (df *CDataFrame) ColIndex(i int) Column {
 	return &column{
 		v:            df.cols[i].v,
 		rowNames:     &df.rowNames,
@@ -328,7 +327,7 @@ func (df *ColumnDataFrame) ColIndex(i int) Column {
 // does copy data. Use Col() over Row() whenever possible.
 //
 // Row will panic if the rowName does not exist.
-func (df *ColumnDataFrame) Row(rowName string) Row {
+func (df *CDataFrame) Row(rowName string) Row {
 	if df.rowNameIndex != nil {
 		if i, ok := df.rowNameIndex[rowName]; ok {
 			return df.RowIndex(i)
@@ -347,7 +346,7 @@ func (df *ColumnDataFrame) Row(rowName string) Row {
 // RowIndex() whenever possible.
 //
 // RowIndex will panic if the index is out of bounds.
-func (df *ColumnDataFrame) RowIndex(i int) Row {
+func (df *CDataFrame) RowIndex(i int) Row {
 	vals := make([]SimpleData, len(df.cols))
 	for j := range df.cols {
 		vals[j] = df.cols[j].get(i)
@@ -363,7 +362,7 @@ func (df *ColumnDataFrame) RowIndex(i int) Row {
 // than once.
 //
 // Do not call this method if you are using NewDataFrame.
-func (df *ColumnDataFrame) SetCols(colNames ...string) {
+func (df *CDataFrame) SetCols(colNames ...string) {
 	if df.colNames != nil {
 		panic("already set columns on this dataframe")
 	}
@@ -378,7 +377,7 @@ func (df *ColumnDataFrame) SetCols(colNames ...string) {
 // increase the performance of row name lookups.
 //
 // For maximum benefit, enable before adding any rows.
-func (df *ColumnDataFrame) FastRowLookups(enable bool) {
+func (df *CDataFrame) FastRowLookups(enable bool) {
 	if !enable {
 		df.rowNameIndex = nil
 	}
@@ -390,7 +389,7 @@ func (df *ColumnDataFrame) FastRowLookups(enable bool) {
 // AppendRow adds a new row of data to the DataFrame with the
 // given name. If you do not want named rows, use AppendURow
 // instead.
-func (df *ColumnDataFrame) AppendRow(name string, vals ...SimpleData) {
+func (df *CDataFrame) AppendRow(name string, vals ...SimpleData) {
 	if df.namelessRows {
 		panic("cannot add named row: rows are nameless")
 	}
@@ -408,7 +407,7 @@ func (df *ColumnDataFrame) AppendRow(name string, vals ...SimpleData) {
 
 // AppendURow adds a new row of data to the DataFrame without
 // a name. If you do want named rows, use AppendRow instead.
-func (df *ColumnDataFrame) AppendURow(vals ...SimpleData) {
+func (df *CDataFrame) AppendURow(vals ...SimpleData) {
 	if df.rowNames != nil {
 		panic("cannot add nameless row: rows are named")
 	}

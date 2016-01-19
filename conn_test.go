@@ -99,7 +99,7 @@ func TestSendDFTypes(t *testing.T) {
 	defer rc.Close()
 	for caseN, c := range testCases {
 		t.Logf("case %d: building data frame", caseN)
-		var df dataframe.ColumnDataFrame
+		var df dataframe.CDataFrame
 		df.SetCols(c.ColNames...)
 		if c.HasRowNames {
 			for _, r := range c.Rows {
