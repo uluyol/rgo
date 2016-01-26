@@ -135,3 +135,11 @@ func TestSendDFTypes(t *testing.T) {
 		}
 	}
 }
+
+func TestConnInvalid(t *testing.T) {
+	rc := newTestConn(t)
+	defer rc.Close()
+	if err := rc.R("a <-"); err == nil {
+		t.Errorf("expected error")
+	}
+}

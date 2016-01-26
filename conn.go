@@ -28,9 +28,19 @@ type Conn struct {
 	counter uint64
 	server  *server
 
-	err    error
-	strict bool
-	closed bool
+	err     error
+	strict  bool
+	closed  <-chan struct{}
+	waitErr error
+}
+
+func (c *Conn) isClosed() bool {
+	select {
+	case <-c.closed:
+		return true
+	default:
+		return false
+	}
 }
 
 func (c *Conn) start() error {
@@ -38,6 +48,13 @@ func (c *Conn) start() error {
 	if err != nil {
 		return err
 	}
+	ch := make(chan struct{})
+	c.closed = ch
+	go func() {
+		err := c.cmd.Wait()
+		c.waitErr = err
+		close(ch)
+	}()
 	return err
 }
 
@@ -107,12 +124,13 @@ ErrCleanup:
 }
 
 func (c *Conn) Close() error {
-	if c.closed {
-		return nil
+	if c.isClosed() {
+		return c.waitErr
 	}
 	c.directR("q()")
 	c.inPipe.Close()
-	err1 := c.cmd.Wait()
+	<-c.closed
+	err1 := c.waitErr
 	err2 := c.server.s.Stop()
 	if err1 != nil {
 		return err1
@@ -185,7 +203,14 @@ func (c *Conn) R(cmd string) error {
 	c.server.putFwd(key, rch)
 	defer c.server.rmFwd(key)
 	fmt.Fprintf(c.inPipe, cmdStr, cmd, c.server.port, key)
-	rd := <-rch
+	var rd readerDone
+	select {
+	case <-c.closed:
+		c.err = c.waitErr
+		return c.err
+	case thisRD := <-rch:
+		rd = thisRD
+	}
 	defer close(rd.done)
 	dec := json.NewDecoder(rd.r)
 	var resultPair []string
