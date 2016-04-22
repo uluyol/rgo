@@ -51,9 +51,15 @@ func (c *Conn) start() error {
 	ch := make(chan struct{})
 	c.closed = ch
 	go func() {
-		err := c.cmd.Wait()
-		c.waitErr = err
+		state, err := c.cmd.Process.Wait()
+		if err != nil {
+			c.waitErr = err
+		} else if !state.Success() {
+			c.waitErr = rError("an execution error occured")
+		}
 		close(ch)
+		c.inPipe.Close()
+		c.cmd.Wait() // clean up resources
 	}()
 	return err
 }
@@ -83,11 +89,15 @@ func Connection(opts ...ConnOption) (*Conn, error) {
 		return nil, fmt.Errorf("failed to check dependencies: %v", err)
 	}
 	if string(out) != "TRUE" {
-		fmt.Printf("got: %s", out)
+		if cfg.debug {
+			fmt.Printf("got: %s", out)
+		}
 		return nil, errors.New("need to install 'jsonlite' and 'RCurl'")
 	}
 	c.cmd = exec.Command("R", "--no-save")
-	c.inPipe, err = c.cmd.StdinPipe()
+	pr, pw := io.Pipe()
+	c.cmd.Stdin = pr
+	c.inPipe = pw
 	if cfg.debug {
 		c.cmd.Stdout = os.Stdout
 		c.cmd.Stderr = os.Stderr

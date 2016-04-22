@@ -2,6 +2,7 @@ package rgo
 
 import (
 	"testing"
+	"time"
 
 	"github.com/uluyol/rgo/dataframe"
 )
@@ -139,7 +140,16 @@ func TestSendDFTypes(t *testing.T) {
 func TestConnInvalid(t *testing.T) {
 	rc := newTestConn(t)
 	defer rc.Close()
-	if err := rc.R("a <-"); err == nil {
-		t.Errorf("expected error")
+	ec := make(chan error)
+	go func() {
+		ec <- rc.R("a <-")
+	}()
+	select {
+	case err := <-ec:
+		if err == nil {
+			t.Errorf("expected error")
+		}
+	case <-time.After(3 * time.Second):
+		t.Errorf("failed to get error by deadline")
 	}
 }
