@@ -82,9 +82,12 @@ func TestDataFrameGet(t *testing.T) {
 				df.RowIndex(0).Get("a", &a2)
 				df.RowIndex(2).Get("B", &b2)
 				df.RowIndex(1).Get("cc", &cc2)
+				ccSD := df.RowIndex(1).GetSD("cc")
+				cc2Conv, ok := ccSD.(bool)
 
 				return (a == 65 && b == "x" && cc == true &&
-					a2 == 1 && b2 == "aa" && cc2 == false)
+					a2 == 1 && b2 == "aa" && ok && cc2 == false &&
+					cc2 == cc2Conv)
 			},
 		},
 		{
@@ -101,9 +104,12 @@ func TestDataFrameGet(t *testing.T) {
 				var second2 int
 				df.Row("asdf").GetIndex(0, &first2)
 				df.Row("222").GetIndex(1, &second2)
+				second2SD := df.Row("222").GetIndexSD(1)
+				second2Conv, ok := second2SD.(int)
 
 				return (first == 2 && second == 4 &&
-					first2 == 2.5 && second2 == 1)
+					first2 == 2.5 && second2 == 1 && ok &&
+					second2 == second2Conv)
 			},
 		},
 	}
@@ -124,6 +130,20 @@ func TestDataFrameGet(t *testing.T) {
 		}
 		if !c.GetFunc(&df) {
 			t.Errorf("case %d: get returned incorrect values", caseN)
+		}
+	}
+}
+
+func TestDataFrameColNames(t *testing.T) {
+	cases := [][]string{
+		{"abc", "123", "asdfasdf", "123"},
+		{"09--", "-09213", "asdf.asdf.asdf", "as2342afad;'"},
+	}
+	for caseN, c := range cases {
+		df := New(c...)
+		names := df.ColNames()
+		if !reflect.DeepEqual(names, c) {
+			t.Errorf("case %d: failed to retrieve column names", caseN)
 		}
 	}
 }
