@@ -18,7 +18,7 @@ types["all"] = types["other"] + types["numeric"]
 
 with open(outFile, "w") as w:
 	w.write("package dataframe\n\n")
-	w.write('import "fmt"\n\n')
+	w.write('import (\n\t"fmt"\n\n\t"github.com/pkg/errors"\n)\n\n')
 	w.write("// IsNumeric checks whether x is a numeric type. Currently these\n")
 	w.write("// consist only of integers and floats. Complex numbers and big\n")
 	w.write("// numbers are not considered numeric.\n")
@@ -47,5 +47,5 @@ with open(outFile, "w") as w:
 		w.write('\tcase "%s":\n' % (t,))
 		w.write("\t\treturn new([]%s), nil\n" % (t,))
 	w.write("\t}\n")
-	w.write('\treturn nil, fmt.Errorf("invalid data type %q for SimpleData", dtype)\n')
+	w.write('\treturn nil, errors.Errorf("invalid data type %q for SimpleData", dtype)\n')
 	w.write("}\n")

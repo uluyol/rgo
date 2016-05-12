@@ -2,9 +2,10 @@ package dataframe
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"reflect"
+
+	"github.com/pkg/errors"
 )
 
 //go:generate python3 gen_simple_data.py simple_data_util.generated.go other=string,bool numeric=int,int8,int16,int32,int64,uint,uint8,uint16,uint32,uint64,uintptr,float32,float64

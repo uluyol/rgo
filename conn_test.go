@@ -153,3 +153,22 @@ func TestConnInvalid(t *testing.T) {
 		t.Errorf("failed to get error by deadline")
 	}
 }
+
+func TestErrors(t *testing.T) {
+	var err error
+	err = rError("")
+	_, ok := err.(RError)
+	if !ok {
+		t.Error("rError does not implement RError")
+	}
+	err = rWarning("")
+	_, ok = err.(RWarning)
+	if !ok {
+		t.Error("rWarning does not implement RWarning")
+	}
+	err = depError{}
+	_, ok = err.(DependencyError)
+	if !ok {
+		t.Error("depError does not implement DependencyError")
+	}
+}

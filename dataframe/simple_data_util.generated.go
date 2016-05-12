@@ -1,6 +1,10 @@
 package dataframe
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/pkg/errors"
+)
 
 // IsNumeric checks whether x is a numeric type. Currently these
 // consist only of integers and floats. Complex numbers and big
@@ -83,5 +87,5 @@ func slicePtrOf(dtype string) (interface{}, error) {
 	case "float64":
 		return new([]float64), nil
 	}
-	return nil, fmt.Errorf("invalid data type %q for SimpleData", dtype)
+	return nil, errors.Errorf("invalid data type %q for SimpleData", dtype)
 }

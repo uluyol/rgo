@@ -12,6 +12,7 @@ before_install:
   - sudo apt-get install -y r-base r-base-dev
   - sudo R -e "install.packages('jsonlite', repo='http://cran.cnr.Berkeley.edu/')"
   - sudo R -e "install.packages('RCurl', repo='http://cran.cnr.Berkeley.edu/')"
+  - go get github.com/pkg/errors
   - go get github.com/axw/gocov/gocov
   - go get github.com/mattn/goveralls
   - if ! go get github.com/golang/tools/cmd/cover; then go get golang.org/x/tools/cmd/cover; fi
