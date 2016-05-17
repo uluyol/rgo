@@ -8,7 +8,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-//go:generate python3 gen_simple_data.py simple_data_util.generated.go other=string,bool numeric=int,int8,int16,int32,int64,uint,uint8,uint16,uint32,uint64,uintptr,float32,float64
+//go:generate python3 mk_dtype.py zdtype.go other=string,bool numeric=int,int8,int16,int32,int64,uint,uint8,uint16,uint32,uint64,uintptr,float32,float64
 
 // SimpleData is the the data type used for DataFrames.
 // A string, int, float, or bool (of any size) is a
